@@ -1,5 +1,17 @@
+// Vérification de l'authentification
+const checkAuth = () => {
+  const token = getToken();
+  if (!token) {
+    window.location.href = '/login.html';  // Redirige vers la page de login si non authentifié
+  }
+};
 
-const socket = io();
+// Appeler la fonction checkAuth au chargement de la page
+window.onload = checkAuth;
+
+
+// Fonction pour obtenir le token depuis le stockage local
+const getToken = () => localStorage.getItem('token');
 
 // Création d'une salle
 const createRoomForm = document.getElementById('createRoomForm');
@@ -10,7 +22,10 @@ if (createRoomForm) {
 
     fetch('/api/conferences/create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
       body: JSON.stringify({ roomName })
     })
     .then(response => response.json())
@@ -28,21 +43,23 @@ if (joinRoomForm) {
     event.preventDefault();
     const roomCode = document.getElementById('roomCode').value;
 
-    fetch(`/api/conferences/join/${roomCode}`)
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        } else {
-          throw new Error('Salle non trouvée.');
-        }
-      })
-      .then(data => {
-        window.location.href = `/conference.html?roomCode=${data.room.room_code}`;
-      })
-      .catch(error => {
-        console.error('Erreur:', error);
-        alert('Salle non trouvée. Veuillez vérifier le code.');
-      });
+    fetch(`/api/conferences/join/${roomCode}`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error('Salle non trouvée.');
+      }
+    })
+    .then(data => {
+      window.location.href = `/conference.html?roomCode=${data.room.room_code}`;
+    })
+    .catch(error => {
+      console.error('Erreur:', error);
+      alert('Salle non trouvée. Veuillez vérifier le code.');
+    });
   });
 }
 // Gestion de la conférence

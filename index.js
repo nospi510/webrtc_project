@@ -11,12 +11,16 @@ const io = socketIo(server);
 // Importation des routes
 const conferenceRoutes = require('./server/routes/conferenceRoutes');
 
+const userRoutes = require('./server/routes/userRoutes');
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes API
 app.use('/api/conferences', conferenceRoutes);
+app.use('/api/users', userRoutes);
+
 
 // Servir les fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));

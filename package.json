@@ -10,11 +10,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.11.0",
     "peer": "^1.0.2",
     "peerjs": "^1.5.4",
     "socket.io": "^4.7.5",
+    "stack": "^0.1.0",
     "uuid": "^10.0.0"
   }
 }
