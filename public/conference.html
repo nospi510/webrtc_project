@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style1.css">
+  <title>Salle de Conférence</title>
+  
+</head>
+<body>
+  <header>
+    <img src="images/logo.png" alt="Logo">
+    <h1>Salle de Conférence</h1>
+  </header>
+
+  <div class="conference-container">
+    <div class="participants-list">
+      <h2>Participants</h2>
+      <!-- Liste des participants (à implémenter) -->
+      <ul>
+        <!-- Les noms des participants seront ajoutés ici -->
+      </ul>
+    </div>
+
+    <div class="video-container">
+      <div id="video-grid"></div>
+    </div>
+
+    <div class="options-container">
+      <button class="option-button" id="shareScreen">Partager l'écran</button>
+      <!-- Autres boutons d'options (à implémenter) -->
+      <button class="option-button">Option 1</button>
+      <button class="option-button">Option 2</button>
+      <!-- Vous pouvez ajouter plus d'options ici -->
+    </div>
+  </div>
+
+  <footer>
+    <button id="muteButton">Muet</button>
+    <button id="videoButton">Vidéo</button>
+    <button id="endCallButton">Terminer l'appel</button>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
