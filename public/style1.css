@@ -110,3 +110,10 @@ body {
   footer button:hover {
     background-color: #0288d1;
   }
+
+  .shared-screen {
+    border: 2px solid #00f;
+    width: 100%;
+    height: auto;
+  }
+  

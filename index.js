@@ -1,16 +1,21 @@
 const express = require('express');
-const http = require('http');
+const https = require('https'); // Remplacer http par https
+const fs = require('fs');
 const socketIo = require('socket.io');
 const { ExpressPeerServer } = require('peer');
 const path = require('path');
 
+// Charger les certificats SSL
+const privateKey = fs.readFileSync('server.key', 'utf8');
+const certificate = fs.readFileSync('server.cert', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
 const app = express();
-const server = http.createServer(app);
+const server = https.createServer(credentials, app); // Utiliser HTTPS ici
 const io = socketIo(server);
 
 // Importation des routes
 const conferenceRoutes = require('./server/routes/conferenceRoutes');
-
 const userRoutes = require('./server/routes/userRoutes');
 
 // Middleware
@@ -20,7 +25,6 @@ app.use(express.urlencoded({ extended: true }));
 // Routes API
 app.use('/api/conferences', conferenceRoutes);
 app.use('/api/users', userRoutes);
-
 
 // Servir les fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
@@ -52,7 +56,7 @@ io.on('connection', (socket) => {
 });
 
 // Démarrage du serveur
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+  console.log(`Serveur HTTPS démarré sur le port ${PORT}`);
 });
