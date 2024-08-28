@@ -26,10 +26,6 @@ window.onload = checkAuth;
 // Fonction pour obtenir le token depuis le stockage local
 const getToken = () => localStorage.getItem('token');
 
-
-
-
-
 // Création d'une salle
 const createRoomForm = document.getElementById('createRoomForm');
 if (createRoomForm) {
@@ -80,17 +76,11 @@ if (joinRoomForm) {
   });
 }
 
-
-
 // Sélectionner le bouton d'invitation
 const inviteButton = document.getElementById('inviteParticipant');
-
-// Ajouter un écouteur d'événements au bouton
 inviteButton.addEventListener('click', () => {
-  // Générer le lien d'invitation
   const inviteLink = `${window.location.origin}/conference.html?roomCode=${roomCode}`;
   
-  // Copier le lien dans le presse-papier
   navigator.clipboard.writeText(inviteLink)
     .then(() => {
       alert('Lien d\'invitation copié dans le presse-papier : ' + inviteLink);
@@ -100,9 +90,6 @@ inviteButton.addEventListener('click', () => {
       alert('Impossible de copier le lien d\'invitation.');
     });
 });
-
-
-
 
 // Gestion de la conférence
 const urlParams = new URLSearchParams(window.location.search);
@@ -119,10 +106,12 @@ if (roomCode) {
     port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80)
   });
 
-
-
+  const socket = io(); // Assurez-vous que Socket.IO est initialisé
+  const peers = {};
   let myVideoStream;
-
+  let screenStream;
+  const screenVideo = document.createElement('video');
+  
   navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true
@@ -148,63 +137,73 @@ if (roomCode) {
       videoEnabled = !videoEnabled;
       myVideoStream.getVideoTracks()[0].enabled = videoEnabled;
       videoButton.textContent = videoEnabled ? 'Vidéo' : 'Caméra activée';
-    });    
-  // Gestion du partage d'écran
-const shareScreenButton = document.getElementById('shareScreen');
-let screenStream;
-
-shareScreenButton.addEventListener('click', async () => {
-  try {
-    // Demande à l'utilisateur de sélectionner l'écran ou la fenêtre à partager
-    screenStream = await navigator.mediaDevices.getDisplayMedia({
-      video: {
-        cursor: "always" // Option pour montrer ou cacher le curseur
-      },
-      audio: false // Le partage d'audio n'est pas toujours bien supporté
     });
 
-    // Ajout du flux de partage d'écran à l'interface utilisateur
-    const screenVideo = document.createElement('video');
-    screenVideo.srcObject = screenStream;
-    screenVideo.addEventListener('loadedmetadata', () => {
-      screenVideo.play();
+    // Gestion du partage d'écran
+    const shareScreenButton = document.getElementById('shareScreen');
+    shareScreenButton.addEventListener('click', async () => {
+      try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            cursor: "always"
+          },
+          audio: false
+        });
+
+        screenVideo.srcObject = screenStream;
+        screenVideo.classList.add('shared-screen'); // Classe CSS pour styliser
+        document.getElementById('video-grid').append(screenVideo);
+
+        const videoTrack = screenStream.getVideoTracks()[0];
+        const sender = peer.getSenders().find(s => s.track.kind === 'video');
+        if (sender) {
+          sender.replaceTrack(videoTrack);
+        }
+
+        screenStream.getTracks().forEach(track => {
+          track.onended = () => {
+            const videoSender = peer.getSenders().find(s => s.track.kind === 'video');
+            if (videoSender) {
+              videoSender.replaceTrack(myVideoStream.getVideoTracks()[0]);
+            }
+            screenVideo.remove(); // Retirer l'écran partagé de l'interface utilisateur
+          };
+        });
+
+      } catch (error) {
+        console.error('Erreur lors du partage d\'écran:', error);
+        alert('Le partage d\'écran a échoué.');
+      }
     });
-    screenVideo.classList.add('shared-screen'); // Classe CSS pour styliser si nécessaire
-    document.getElementById('video-grid').append(screenVideo);
-
-    // Remplace le flux vidéo actuel par le flux de partage d'écran
-    const videoTrack = screenStream.getVideoTracks()[0];
-    const sender = peer.getSenders().find(s => s.track.kind === 'video');
-    sender.replaceTrack(videoTrack);
-
-    // Remet la caméra après la fin du partage d'écran
-    videoTrack.onended = () => {
-      const videoSender = peer.getSenders().find(s => s.track.kind === 'video');
-      videoSender.replaceTrack(myVideoStream.getVideoTracks()[0]);
-      screenVideo.remove(); // Retirer l'écran partagé de l'interface utilisateur
-    };
-
-  } catch (error) {
-    console.error('Erreur lors du partage d\'écran:', error);
-    alert('Le partage d\'écran a échoué.');
-  }
-});
 
   }).catch((error) => {
     console.error('Erreur lors de l\'accès à la caméra/microphone:', error);
     alert('Impossible d\'accéder à la caméra et au microphone.');
-  });
-  
-
-  socket.on('user-disconnected', (userId) => {
-    if (peers[userId]) peers[userId].close();
   });
 
   peer.on('open', (id) => {
     socket.emit('join-room', roomCode, id);
   });
 
-  const peers = {};
+  socket.on('user-connected', (userId) => {
+    connectToNewUser(userId, myVideoStream);
+  });
+
+  socket.on('user-disconnected', (userId) => {
+    if (peers[userId]) peers[userId].close();
+  });
+
+  peer.on('call', (call) => {
+    call.answer(myVideoStream);
+    const video = document.createElement('video');
+    call.on('stream', (userVideoStream) => {
+      addVideoStream(video, userVideoStream);
+    });
+    call.on('close', () => {
+      video.remove();
+    });
+    peers[call.peer] = call;
+  });
 
   function connectToNewUser(userId, stream) {
     const call = peer.call(userId, stream);
@@ -224,14 +223,7 @@ shareScreenButton.addEventListener('click', async () => {
     video.addEventListener('loadedmetadata', () => {
       video.play();
     });
+    video.classList.add('participant-video');
     videoGrid.append(video);
   }
-
-  
-  
-  
-
-  
 }
-
-
