@@ -56,7 +56,7 @@ io.on('connection', (socket) => {
 });
 
 // Démarrage du serveur
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Serveur HTTPS démarré sur le port ${PORT}`);
 });

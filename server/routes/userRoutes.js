@@ -4,6 +4,8 @@ const connection = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const secretKey = 'wrauWhjFnXEyjOB6OvQNZmoqj5Qux/eHelfPygJzyuA='; // Remplacez par votre clé secrète pour JWT
+const authenticateToken = require('../middleware/authMiddleware');
+
 
 // Inscription
 router.post('/register', (req, res) => {
@@ -41,9 +43,15 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ success: false, message: 'Identifiant ou mot de passe incorrect.' });
     }
 
-    const token = jwt.sign({ userId: user.id, identifiant: user.identifiant }, secretKey, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id, nom: user.nom, role: user.role }, secretKey, { expiresIn: '1h' });
     res.json({ token });
   });
+});
+
+// Route pour obtenir les détails de l'utilisateur
+router.get('/me', authenticateToken, (req, res) => {
+  // Retourner les détails de l'utilisateur
+  res.json(req.user);
 });
 
 module.exports = router;

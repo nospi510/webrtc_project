@@ -1,17 +1,33 @@
+// script.js
+
 // Vérification de l'authentification
 const checkAuth = () => {
   const token = getToken();
   if (!token) {
     window.location.href = '/login.html';  // Redirige vers la page de login si non authentifié
+  } else {
+    fetch('/api/users/me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(response => response.json())
+    .then(user => {
+      document.getElementById('welcomeMessage').textContent = `Bienvenue ${user.nom}`;
+    })
+    .catch(error => {
+      console.error('Erreur lors de la récupération des informations utilisateur:', error);
+      document.getElementById('welcomeMessage').textContent = 'Erreur lors de la récupération du nom';
+    });
   }
 };
 
 // Appeler la fonction checkAuth au chargement de la page
 window.onload = checkAuth;
 
-
 // Fonction pour obtenir le token depuis le stockage local
 const getToken = () => localStorage.getItem('token');
+
+
+
 
 
 // Création d'une salle
@@ -63,6 +79,8 @@ if (joinRoomForm) {
     });
   });
 }
+
+
 
 // Sélectionner le bouton d'invitation
 const inviteButton = document.getElementById('inviteParticipant');
@@ -208,6 +226,8 @@ shareScreenButton.addEventListener('click', async () => {
     });
     videoGrid.append(video);
   }
+
+  
   
   
 

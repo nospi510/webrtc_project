@@ -9,6 +9,10 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, secretKey, (err, user) => {
     if (err) return res.sendStatus(403); // Si le token est invalide, renvoie une erreur 403
+    
+    // Assurez-vous que l'utilisateur a bien un ID
+    if (!user.id) return res.status(400).json({ error: "L'ID de l'utilisateur est manquant dans le token." });
+
     req.user = user; // Ajoute les informations de l'utilisateur à la requête
     next();
   });
