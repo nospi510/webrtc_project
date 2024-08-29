@@ -1,120 +1,121 @@
-
+/* Style général */
 body {
-    background-color: #e0f7fa; /* Bleu clair */
-    font-family: Arial, sans-serif;
-    color: #01579b; /* Bleu marine */
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    margin: 0;
-  }
+  margin: 0;
+  padding: 0;
+  background-color: #e0f7fa; /* Bleu ciel */
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
 
-  header {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    background-color: #0288d1; /* Bleu ciel */
-  }
+/* Header */
+header {
+  background-color: #1a237e; /* Bleu nuit */
+  color: white;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+}
 
-  header img {
-    width: 50px;
-    height: auto;
-  }
+header img {
+  height: 40px;
+  margin-right: 15px;
+}
 
-  header h1 {
-    margin: 0;
-    margin-left: 33%;
-    font-size: 1.5em;
-    color: #ffffff; /* Blanc */
-  }
+header h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
 
-  .conference-container {
-    display: flex;
-    flex: 1;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-  }
+/* Conteneur de la conférence */
+.conference-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
 
-  .participants-list {
-    width: 20%;
-    background-color: #ffffff; /* Blanc */
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-right: 20px;
-    padding: 10px;
-    overflow-y: auto;
-    max-height: 80%;
-  }
+/* Liste des participants */
+.participants-list {
+  display: none; /* Masquer la liste des participants pour cette mise en page */
+}
 
-  .video-container {
-    width: 60%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #ffffff; /* Blanc */
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 10px;
-    position: relative;
-  }
+/* Conteneur vidéo */
+.video-container {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  padding: 10px;
+  background-color: #e0f7fa; /* Couleur de fond pour la vidéo */
+}
 
-  video {
-    width: 100%;
-    border-radius: 8px;
-  }
+/* Grille des vidéos */
+#video-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  width: 100%;
+  height: 100%;
+  max-height: 100%; /* Empêche le dépassement vertical */
+  justify-items: center;
+  align-items: center;
+}
 
-  .options-container {
-    width: 20%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-  }
+/* Style des vidéos */
+#video-grid video {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+  object-fit: contain; /* Ajuste la vidéo pour qu'elle tienne dans l'espace disponible */
+  background-color: black;
+  position: relative;
+}
 
-  .option-button {
-    width: 80%;
-    padding: 10px;
-    margin-bottom: 10px;
-    background-color: #01579b; /* Bleu marine */
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
+#video-grid .my-small-video {
+  width: 150px;
+  height: 100px;
+  position: absolute;
+  bottom: 10px; /* Placer en bas */
+  right: 10px;  /* Placer à droite */
+  border: 2px solid white;
+  z-index: 2;
+  object-fit: cover; /* Remplit l'espace tout en conservant le ratio */
+}
 
-  .option-button:hover {
-    background-color: #0288d1; /* Bleu ciel */
-  }
+/* Conteneur d'options */
+.options-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  background-color: #1a237e; /* Bleu nuit */
+}
 
-  /* Footer pour les contrôles */
-  footer {
-    width: 100%;
-    background-color: #0288d1;
-    padding: 10px;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-  }
+/* Boutons */
+.option-button, footer button {
+  background-color: #42a5f5; /* Bleu clair */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
 
-  footer button {
-    background-color: #01579b;
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    padding: 10px 20px;
-    cursor: pointer;
-  }
+.option-button:hover, footer button:hover {
+  background-color: #1976d2; /* Bleu plus foncé */
+}
 
-  footer button:hover {
-    background-color: #0288d1;
-  }
-
-  .shared-screen {
-    border: 2px solid #00f;
-    width: 100%;
-    height: auto;
-  }
-  
-  
+/* Footer */
+footer {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  background-color: #1a237e; /* Bleu nuit */
+}

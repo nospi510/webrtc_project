@@ -172,7 +172,7 @@ if (roomCode) {
 
       } catch (error) {
         console.error('Erreur lors du partage d\'écran:', error);
-        alert('Le partage d\'écran a échoué.');
+        
       }
     });
 
