@@ -38,7 +38,7 @@ header h1 {
 
 /* Liste des participants */
 .participants-list {
-  display: none; /* Masquer la liste des participants pour cette mise en page */
+  display: flex; /* Masquer la liste des participants pour cette mise en page */
 }
 
 /* Conteneur vidéo */

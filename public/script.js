@@ -1,5 +1,3 @@
-// script.js
-
 // Vérification de l'authentification
 const checkAuth = () => {
   const token = getToken();
@@ -91,6 +89,8 @@ inviteButton.addEventListener('click', () => {
     });
 });
 
+
+
 // Gestion de la conférence
 const urlParams = new URLSearchParams(window.location.search);
 const roomCode = urlParams.get('roomCode');
@@ -139,6 +139,8 @@ if (roomCode) {
       videoButton.textContent = videoEnabled ? 'Vidéo' : 'Caméra activée';
     });
 
+
+
     // Gestion du partage d'écran
     const shareScreenButton = document.getElementById('shareScreen');
     shareScreenButton.addEventListener('click', async () => {
@@ -180,6 +182,43 @@ if (roomCode) {
     console.error('Erreur lors de l\'accès à la caméra/microphone:', error);
     alert('Impossible d\'accéder à la caméra et au microphone.');
   });
+
+  // Terminer l'appel
+
+  // Sélectionne le bouton "Terminer l'appel"
+const endCallButton = document.getElementById('endCallButton');
+
+// Fonction pour terminer l'appel
+function endCall() {
+  // Arrêter tous les flux vidéo
+  const videoElements = document.querySelectorAll('video');
+  videoElements.forEach(video => {
+    if (video.srcObject) {
+      // Arrêter chaque flux média
+      video.srcObject.getTracks().forEach(track => track.stop());
+      video.srcObject = null;
+    }
+  });
+
+  // Fermer la connexion PeerJS si elle existe
+  if (peer) {
+    peer.destroy(); // Fermer la connexion Peer
+  }
+
+  // Déconnecter le socket.io
+  if (socket) {
+    socket.disconnect();
+  }
+
+  // Rediriger vers la page d'accueil ou afficher un message
+  window.location.href = 'index.html'; //retourner à la page d'accueil
+}
+
+// Associer l'événement de clic au bouton
+endCallButton.addEventListener('click', endCall);
+
+
+
 
   peer.on('open', (id) => {
     socket.emit('join-room', roomCode, id);

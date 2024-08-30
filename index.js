@@ -47,13 +47,16 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', (roomCode, userId) => {
     socket.join(roomCode);
+    console.log(`Utilisateur (${userId}) s'est connecté à la salle ${roomCode}.`);
     socket.to(roomCode).emit('user-connected', userId);
 
     socket.on('disconnect', () => {
+      console.log(`Utilisateur (${userId}) s'est déconnecté de la salle ${roomCode}.`);
       socket.to(roomCode).emit('user-disconnected', userId);
     });
   });
 });
+
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 3000;
