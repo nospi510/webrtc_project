@@ -42,20 +42,40 @@ const peerServer = ExpressPeerServer(server, {
 app.use('/peerjs', peerServer);
 
 // Gestion des connexions Socket.IO
+// Gestion des connexions Socket.IO
 io.on('connection', (socket) => {
   console.log('Un utilisateur s\'est connecté.');
 
   socket.on('join-room', (roomCode, userId) => {
     socket.join(roomCode);
     console.log(`Utilisateur (${userId}) s'est connecté à la salle ${roomCode}.`);
-    socket.to(roomCode).emit('user-connected', userId);
+    
+    // Notifier tous les utilisateurs de la salle que quelqu'un est connecté
+    io.to(roomCode).emit('user-connected', userId);
 
+    // Envoyer les détails des utilisateurs déjà connectés à l'utilisateur qui vient de se connecter
+    const usersInRoom = Array.from(io.sockets.adapter.rooms.get(roomCode) || []).map(id => id);
+    usersInRoom.forEach(user => {
+      if (user !== userId) {
+        socket.emit('user-connected', user);
+      }
+    });
+
+    // Gestion de l'envoi et de la réception des messages de chat
+    socket.on('chat message', (data) => {
+      console.log(`Message reçu de ${data.nom}: ${data.message}`);
+      io.to(roomCode).emit('chat message', data);
+    });
+
+    // Gestion de la déconnexion de l'utilisateur
     socket.on('disconnect', () => {
       console.log(`Utilisateur (${userId}) s'est déconnecté de la salle ${roomCode}.`);
       socket.to(roomCode).emit('user-disconnected', userId);
     });
   });
 });
+
+
 
 
 // Démarrage du serveur

@@ -141,42 +141,69 @@ if (roomCode) {
 
 
 
-    // Gestion du partage d'écran
-    const shareScreenButton = document.getElementById('shareScreen');
-    shareScreenButton.addEventListener('click', async () => {
-      try {
-        screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            cursor: "always"
-          },
-          audio: false
-        });
-
-        screenVideo.srcObject = screenStream;
-        screenVideo.classList.add('shared-screen'); // Classe CSS pour styliser
-        document.getElementById('video-grid').append(screenVideo);
-
-        const videoTrack = screenStream.getVideoTracks()[0];
-        const sender = peer.getSenders().find(s => s.track.kind === 'video');
-        if (sender) {
-          sender.replaceTrack(videoTrack);
-        }
-
-        screenStream.getTracks().forEach(track => {
-          track.onended = () => {
-            const videoSender = peer.getSenders().find(s => s.track.kind === 'video');
-            if (videoSender) {
-              videoSender.replaceTrack(myVideoStream.getVideoTracks()[0]);
-            }
-            screenVideo.remove(); // Retirer l'écran partagé de l'interface utilisateur
-          };
-        });
-
-      } catch (error) {
-        console.error('Erreur lors du partage d\'écran:', error);
-        
-      }
+ // Implementation du partage d'écran
+const shareScreenButton = document.getElementById('shareScreen');
+shareScreenButton.addEventListener('click', async () => {
+  try {
+    // Demander l'accès au partage d'écran
+    screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        cursor: "always"
+      },
+      audio: false
     });
+
+    // Créer un élément vidéo pour afficher le partage d'écran
+    const screenVideo = document.createElement('video');
+    screenVideo.srcObject = screenStream;
+    
+    // Lire la vidéo lorsque les métadonnées sont chargées
+    screenVideo.addEventListener('loadedmetadata', () => {
+      screenVideo.play();
+    });
+
+    // Ajouter une classe CSS pour styliser le partage d'écran
+    screenVideo.classList.add('shared-screen');
+
+    // Effacer la grille des vidéos et ajouter la vidéo de partage d'écran
+    videoGrid.innerHTML = ''; 
+    videoGrid.append(screenVideo);
+
+    // Remplacer la piste vidéo pour chaque utilisateur connecté
+    for (let userNom in peers) {
+      const call = peers[userNom];
+      if (call) {
+        // Remplacer la piste vidéo actuelle par celle du partage d'écran
+        call.peerConnection.getSenders()
+          .find(sender => sender.track.kind === 'video')
+          .replaceTrack(screenStream.getVideoTracks()[0]);
+      }
+    }
+
+    // Gérer la fin du partage d'écran
+    screenStream.getVideoTracks()[0].onended = () => {
+      // Remplacer la piste vidéo par la vidéo originale
+      const originalVideoTrack = myVideoStream.getVideoTracks()[0];
+      for (let userNom in peers) {
+        const call = peers[userNom];
+        if (call) {
+          call.peerConnection.getSenders()
+            .find(sender => sender.track.kind === 'video')
+            .replaceTrack(originalVideoTrack);
+        }
+      }
+
+      // Effacer la grille des vidéos et réafficher la vidéo de la caméra
+      videoGrid.innerHTML = '';
+      addVideoStream(myVideo, myVideoStream);
+    };
+    
+  } catch (error) {
+    console.error('Erreur lors du partage d\'écran:', error);
+  }
+});
+
+
 
   }).catch((error) => {
     console.error('Erreur lors de l\'accès à la caméra/microphone:', error);
@@ -266,3 +293,66 @@ endCallButton.addEventListener('click', endCall);
     videoGrid.append(video);
   }
 }
+
+
+// recuperation du nom de l'utilisateur 
+
+const fetchUserNom = async () => {
+  try {
+    const response = await fetch('/api/users/me', {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération du nom utilisateur');
+    }
+
+    const data = await response.json();
+    return data.nom; // Retourne le nom de l'utilisateur depuis la réponse API
+  } catch (error) {
+    console.error('Erreur lors de la récupération du nom utilisateur:', error);
+    return null;
+  }
+};
+
+const initChat = async () => {
+try {
+  const userNom = await fetchUserNom(); // Fonction modifiée pour obtenir le champ `nom`
+  const socket = io();
+
+  if (userNom) {
+    socket.emit('join-room', roomCode, userNom);
+  } else {
+    console.error('Impossible de récupérer le nom utilisateur.');
+  }
+
+  // Ajoute un seul listener pour l'envoi du formulaire de chat
+  document.getElementById('chat-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const input = document.getElementById('chat-input');
+    if (input.value.trim() !== '') {
+      socket.emit('chat message', { nom: userNom, message: input.value });
+      input.value = '';
+    }
+  });
+
+  // S'assurez qu'il n'y a qu'un seul listener pour 'chat message'
+  socket.off('chat message'); // Supprime tous les listeners précédents avant d'en ajouter un nouveau
+  socket.on('chat message', function(data) {
+    const chatBox = document.getElementById('chat-box');
+    const messageElement = document.createElement('div');
+    messageElement.textContent = `${data.nom}: ${data.message}`;
+    chatBox.appendChild(messageElement);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+
+} catch (error) {
+  console.error('Erreur lors de l\'initialisation du chat:', error);
+}
+};
+
+initChat(); // Appel de la fonction asynchrone
+
+
+// 7.1. Affichage de la liste des participants 

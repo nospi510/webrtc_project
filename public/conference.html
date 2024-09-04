@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style1.css">
   <title>Salle de Conférence</title>
-  
 </head>
 <body>
   <header>
@@ -13,24 +12,36 @@
     <h1>Salle de Conférence</h1>
   </header>
 
-  <div class="conference-container">
+  <div class="conference-layout">
     <div class="participants-list">
       <h2>Participants</h2>
-      <ul id="participants">
+      <ul class="list-group border p-2 mb-3">
         <!-- Les noms des participants seront ajoutés ici -->
       </ul>
     </div>
 
-    <div class="video-container">
-      <div id="video-grid"></div>
+    <div class="main-content">
+      <div class="video-container">
+        <div id="video-grid"></div>
+      </div>
+
+      <div class="options-container">
+        <button class="option-button" id="shareScreen">Partager l'écran</button>
+        <button class="option-button" id="inviteParticipant">Inviter un participant</button>
+        <!-- Vous pouvez ajouter plus d'options ici -->
+      </div>
     </div>
 
-    <div class="options-container">
-      <button class="option-button" id="shareScreen">Partager l'écran</button>
-      <!-- Autres boutons d'options (à implémenter) -->
-      <button class="option-button" id="inviteParticipant">Inviter un participant</button>
-      <button class="option-button">Option 2</button>
-      <!-- Vous pouvez ajouter plus d'options ici -->
+    <!-- Chat à droite -->
+    <div class="chat-container">
+      <h2>Chat</h2>
+      <div id="chat-box">
+        <!-- Les messages du chat seront ajoutés ici -->
+      </div>
+      <form id="chat-form">
+        <input type="text" id="chat-input" class="chat-input" placeholder="Tapez un message..." autocomplete="on">
+        <button type="submit" class="btn btn-primary">Envoyer</button>
+      </form>
     </div>
   </div>
 
