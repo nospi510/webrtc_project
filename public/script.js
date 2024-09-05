@@ -141,31 +141,28 @@ if (roomCode) {
 
 
 
- // Implementation du partage d'écran
+// Implementation du partage d'écran
 const shareScreenButton = document.getElementById('shareScreen');
 shareScreenButton.addEventListener('click', async () => {
   try {
-    // Demander l'accès au partage d'écran
     screenStream = await navigator.mediaDevices.getDisplayMedia({
-      video: {
-        cursor: "always"
-      },
+      video: { cursor: "always" },
       audio: false
     });
 
+    // Informer les autres participants que le partage d'écran a commencé
+    socket.emit('share-screen-start', roomCode);
+
     // Créer un élément vidéo pour afficher le partage d'écran
-    const screenVideo = document.createElement('video');
     screenVideo.srcObject = screenStream;
-    
-    // Lire la vidéo lorsque les métadonnées sont chargées
+    screenVideo.classList.add('shared-screen');
+    screenVideo.style.width = '100%'; // Plein écran
+
     screenVideo.addEventListener('loadedmetadata', () => {
       screenVideo.play();
     });
 
-    // Ajouter une classe CSS pour styliser le partage d'écran
-    screenVideo.classList.add('shared-screen');
-
-    // Effacer la grille des vidéos et ajouter la vidéo de partage d'écran
+    // Ajouter la vidéo de partage d'écran et désactiver les autres vidéos
     videoGrid.innerHTML = ''; 
     videoGrid.append(screenVideo);
 
@@ -173,7 +170,6 @@ shareScreenButton.addEventListener('click', async () => {
     for (let userNom in peers) {
       const call = peers[userNom];
       if (call) {
-        // Remplacer la piste vidéo actuelle par celle du partage d'écran
         call.peerConnection.getSenders()
           .find(sender => sender.track.kind === 'video')
           .replaceTrack(screenStream.getVideoTracks()[0]);
@@ -182,7 +178,7 @@ shareScreenButton.addEventListener('click', async () => {
 
     // Gérer la fin du partage d'écran
     screenStream.getVideoTracks()[0].onended = () => {
-      // Remplacer la piste vidéo par la vidéo originale
+      // Restaurer la piste vidéo originale
       const originalVideoTrack = myVideoStream.getVideoTracks()[0];
       for (let userNom in peers) {
         const call = peers[userNom];
@@ -193,16 +189,40 @@ shareScreenButton.addEventListener('click', async () => {
         }
       }
 
-      // Effacer la grille des vidéos et réafficher la vidéo de la caméra
+      // Réactiver les vidéos et retirer le partage d'écran
       videoGrid.innerHTML = '';
       addVideoStream(myVideo, myVideoStream);
+
+      // Informer les autres participants que le partage d'écran s'est arrêté
+      socket.emit('share-screen-stop', roomCode);
     };
-    
+
   } catch (error) {
     console.error('Erreur lors du partage d\'écran:', error);
   }
 });
 
+// Gestion des événements Socket.io
+socket.on('share-screen-start', () => {
+  // Masquer les vidéos et afficher le partage d'écran en plein écran
+  const videoElements = document.querySelectorAll('.participant-video');
+  videoElements.forEach(video => {
+    video.style.display = 'block';
+  });
+});
+
+socket.on('share-screen-stop', () => {
+  // Réafficher les vidéos et masquer le partage d'écran
+  const videoElements = document.querySelectorAll('.participant-video');
+  videoElements.forEach(video => {
+    video.style.display = 'block';
+  });
+  // Retirer la vidéo de partage d'écran si encore présente
+  const screenVideo = document.querySelector('.shared-screen');
+  if (screenVideo) {
+    screenVideo.remove();
+  }
+});
 
 
   }).catch((error) => {
@@ -254,6 +274,27 @@ endCallButton.addEventListener('click', endCall);
   socket.on('user-connected', (userId) => {
     connectToNewUser(userId, myVideoStream);
   });
+
+// Implementation de la liste des participants
+socket.on('participants-update', (participants) => {
+  console.log('Participants reçus:', participants);
+  const participantList = document.querySelector('.list-group');
+  participantList.innerHTML = '';
+
+  participants.forEach(userNom => {
+    // Filtrer les UUIDs s'ils apparaissent encore
+    if (!userNom || /^[0-9a-fA-F-]{36}$/.test(userNom)) {
+      console.warn('Nom d\'utilisateur ignoré:', userNom);
+      return;
+    }
+
+    const listItem = document.createElement('li');
+    listItem.className = 'list-group-item';
+    listItem.textContent = userNom;
+    participantList.appendChild(listItem);
+  });
+});
+
 
   socket.on('user-disconnected', (userId) => {
     if (peers[userId]) peers[userId].close();
