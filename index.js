@@ -1,5 +1,5 @@
 const express = require('express');
-const https = require('https'); // Remplacer http par https
+const https = require('https');
 const fs = require('fs');
 const socketIo = require('socket.io');
 const { ExpressPeerServer } = require('peer');
@@ -11,7 +11,7 @@ const certificate = fs.readFileSync('server.cert', 'utf8');
 const credentials = { key: privateKey, cert: certificate };
 
 const app = express();
-const server = https.createServer(credentials, app); // Utiliser HTTPS ici
+const server = https.createServer(credentials, app);
 const io = socketIo(server);
 
 // Importation des routes
@@ -41,46 +41,52 @@ const peerServer = ExpressPeerServer(server, {
 });
 app.use('/peerjs', peerServer);
 
-// Gestion des connexions Socket.IO
-const participants = {}; // Dictionnaire pour stocker les participants par salle
+// Gestion des participants par salle
+const participants = {};
 
+// Fonctions Utilitaires
+const addParticipant = (roomCode, userNom, socket) => {
+  if (!participants[roomCode]) {
+    participants[roomCode] = [];
+  }
+  if (!participants[roomCode].includes(userNom)) {
+    participants[roomCode].push(userNom);
+    socket.join(roomCode);
+    io.to(roomCode).emit('user-connected', userNom);
+    io.to(roomCode).emit('participants-update', participants[roomCode]);
+    console.log(`Utilisateur (${userNom}) s'est connecté à la salle ${roomCode}.`);
+  } else {
+    console.warn(`Utilisateur (${userNom}) est déjà dans la salle ${roomCode}.`);
+  }
+};
+
+const removeParticipant = (roomCode, userNom) => {
+  if (participants[roomCode]) {
+    participants[roomCode] = participants[roomCode].filter(nom => nom !== userNom);
+    io.to(roomCode).emit('participants-update', participants[roomCode]);
+    io.to(roomCode).emit('user-disconnected', userNom);
+    if (participants[roomCode].length === 0) {
+      delete participants[roomCode];
+      console.log(`La salle ${roomCode} a été supprimée car elle est vide.`);
+    }
+  }
+};
+
+// Gestion des connexions Socket.IO
 io.on('connection', (socket) => {
   console.log('Un utilisateur s\'est connecté.');
 
   socket.on('join-room', (roomCode, userNom) => {
-    // Validation des entrées
     if (!roomCode || !userNom) {
       console.error('Room code ou nom d\'utilisateur manquant.');
       return;
     }
-
-    // Stocker le roomCode et le nom de l'utilisateur dans l'objet socket
     socket.roomCode = roomCode;
     socket.userNom = userNom;
-
-    // Ajouter l'utilisateur à la liste des participants de la salle
-    if (!participants[roomCode]) {
-      participants[roomCode] = [];
-    }
-
-    // Vérifier si l'utilisateur est déjà dans la liste des participants
-    if (!participants[roomCode].includes(userNom)) {
-      participants[roomCode].push(userNom);
-      socket.join(roomCode);
-
-      console.log(`Utilisateur (${userNom}) s'est connecté à la salle ${roomCode}.`);
-
-      // Notifier tous les utilisateurs de la salle que quelqu'un est connecté
-      io.to(roomCode).emit('user-connected', userNom);
-
-      // Envoyer la liste mise à jour des participants à tous les utilisateurs de la salle
-      io.to(roomCode).emit('participants-update', participants[roomCode]);
-    } else {
-      console.warn(`Utilisateur (${userNom}) est déjà dans la salle ${roomCode}.`);
-    }
+    addParticipant(roomCode, userNom, socket);
   });
 
-  // Gestion du début du partage d'écran
+  // Gestion du début et de l'arrêt du partage d'écran
   socket.on('share-screen-start', (roomCode) => {
     if (roomCode) {
       io.to(roomCode).emit('share-screen-start', socket.userNom);
@@ -90,7 +96,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Gestion de l'arrêt du partage d'écran
   socket.on('share-screen-stop', (roomCode) => {
     if (roomCode) {
       io.to(roomCode).emit('share-screen-stop', socket.userNom);
@@ -100,9 +105,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Gestion de l'envoi et de la réception des messages de chat
+  // Gestion des messages de chat
   socket.on('chat message', (data) => {
-    const roomCode = socket.roomCode; // Récupérer le roomCode stocké dans le socket
+    const roomCode = socket.roomCode;
     if (roomCode && data && data.nom && data.message) {
       console.log(`Message reçu de ${data.nom}: ${data.message}`);
       io.to(roomCode).emit('chat message', data);
@@ -111,36 +116,22 @@ io.on('connection', (socket) => {
     }
   });
 
+  
+
+
+ 
+  // Déconnexion de l'utilisateur
   socket.on('disconnect', () => {
-    const roomCode = socket.roomCode; // Récupérer le roomCode stocké dans le socket
-    const userNom = socket.userNom; // Récupérer le nom de l'utilisateur stocké dans le socket
+    const roomCode = socket.roomCode;
+    const userNom = socket.userNom;
     if (roomCode && userNom) {
       console.log(`Utilisateur (${userNom}) s'est déconnecté de la salle ${roomCode}.`);
-
-      // Retirer l'utilisateur de la liste des participants de la salle
-      if (participants[roomCode]) {
-        participants[roomCode] = participants[roomCode].filter(nom => nom !== userNom);
-
-        // Notifier les autres utilisateurs de la salle de la déconnexion
-        io.to(roomCode).emit('participants-update', participants[roomCode]);
-        io.to(roomCode).emit('user-disconnected', userNom);
-
-        // Supprimer la salle si elle est vide
-        if (participants[roomCode].length === 0) {
-          delete participants[roomCode];
-          console.log(`La salle ${roomCode} a été supprimée car elle est vide.`);
-        }
-      }
+      removeParticipant(roomCode, userNom);
     } else {
       console.warn('Déconnexion d\'un utilisateur sans informations complètes de salle ou de nom.');
     }
   });
 });
-
-
-
-
-
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 3000;

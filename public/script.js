@@ -118,6 +118,7 @@ if (roomCode) {
   }).then((stream) => {
     myVideoStream = stream;
     addVideoStream(myVideo, stream);
+    
   
     // Gestion du microphone
     const muteButton = document.getElementById('muteButton');
@@ -139,8 +140,7 @@ if (roomCode) {
       videoButton.textContent = videoEnabled ? 'Vidéo' : 'Caméra activée';
     });
 
-
-
+  
 // Implementation du partage d'écran
 const shareScreenButton = document.getElementById('shareScreen');
 shareScreenButton.addEventListener('click', async () => {
@@ -211,61 +211,62 @@ socket.on('share-screen-start', () => {
   });
 });
 
-socket.on('share-screen-stop', () => {
-  // Réafficher les vidéos et masquer le partage d'écran
-  const videoElements = document.querySelectorAll('.participant-video');
-  videoElements.forEach(video => {
-    video.style.display = 'block';
+  socket.on('share-screen-stop', () => {
+    // Réafficher les vidéos et masquer le partage d'écran
+    const videoElements = document.querySelectorAll('.participant-video');
+    videoElements.forEach(video => {
+      video.style.display = 'block';
+    });
+    // Retirer la vidéo de partage d'écran si encore présente
+    const screenVideo = document.querySelector('.shared-screen');
+    if (screenVideo) {
+      screenVideo.remove();
+    }
   });
-  // Retirer la vidéo de partage d'écran si encore présente
-  const screenVideo = document.querySelector('.shared-screen');
-  if (screenVideo) {
-    screenVideo.remove();
-  }
-});
-
 
   }).catch((error) => {
     console.error('Erreur lors de l\'accès à la caméra/microphone:', error);
     alert('Impossible d\'accéder à la caméra et au microphone.');
   });
 
+  
+
   // Terminer l'appel
 
-  // Sélectionne le bouton "Terminer l'appel"
-const endCallButton = document.getElementById('endCallButton');
+    // Sélectionne le bouton "Terminer l'appel"
+  const endCallButton = document.getElementById('endCallButton');
 
-// Fonction pour terminer l'appel
-function endCall() {
-  // Arrêter tous les flux vidéo
-  const videoElements = document.querySelectorAll('video');
-  videoElements.forEach(video => {
-    if (video.srcObject) {
-      // Arrêter chaque flux média
-      video.srcObject.getTracks().forEach(track => track.stop());
-      video.srcObject = null;
+  // Fonction pour terminer l'appel
+  function endCall() {
+    // Arrêter tous les flux vidéo
+    const videoElements = document.querySelectorAll('video');
+    videoElements.forEach(video => {
+      if (video.srcObject) {
+        // Arrêter chaque flux média
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+      }
+    });
+
+    // Fermer la connexion PeerJS si elle existe
+    if (peer) {
+      peer.destroy(); // Fermer la connexion Peer
     }
-  });
 
-  // Fermer la connexion PeerJS si elle existe
-  if (peer) {
-    peer.destroy(); // Fermer la connexion Peer
+    // Déconnecter le socket.io
+    if (socket) {
+      socket.disconnect();
+    }
+
+    // Rediriger vers la page d'accueil ou afficher un message
+    window.location.href = 'index.html'; //retourner à la page d'accueil
   }
 
-  // Déconnecter le socket.io
-  if (socket) {
-    socket.disconnect();
-  }
+  
 
-  // Rediriger vers la page d'accueil ou afficher un message
-  window.location.href = 'index.html'; //retourner à la page d'accueil
-}
-
-// Associer l'événement de clic au bouton
-endCallButton.addEventListener('click', endCall);
-
-
-
+  // Associer l'événement de clic au bouton
+  endCallButton.addEventListener('click', endCall);
+ 
 
   peer.on('open', (id) => {
     socket.emit('join-room', roomCode, id);
@@ -275,7 +276,7 @@ endCallButton.addEventListener('click', endCall);
     connectToNewUser(userId, myVideoStream);
   });
 
-// Implementation de la liste des participants
+  // Écouteur pour les boutons d'action sur chaque participant
 socket.on('participants-update', (participants) => {
   console.log('Participants reçus:', participants);
   const participantList = document.querySelector('.list-group');
@@ -290,9 +291,59 @@ socket.on('participants-update', (participants) => {
 
     const listItem = document.createElement('li');
     listItem.className = 'list-group-item';
-    listItem.textContent = userNom;
+    
+    // Nom du participant
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = userNom;
+    listItem.appendChild(nameSpan);
+
+    // Boutons d'action
+    const callButton = document.createElement('button');
+    callButton.innerHTML = '<i class="fas fa-phone-slash"></i>';
+    callButton.className = 'call-button';
+    listItem.appendChild(callButton);
+
+    const micButton = document.createElement('button');
+    micButton.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+    micButton.className = 'microphone-button';
+    listItem.appendChild(micButton);
+
+    const videoButton = document.createElement('button');
+    videoButton.innerHTML = '<i class="fas fa-video"></i>';
+    videoButton.className = 'video-button';
+    listItem.appendChild(videoButton);
+
     participantList.appendChild(listItem);
+
+    // Ajouter des écouteurs pour les boutons
+    callButton.addEventListener('click', () => {
+      socket.emit('end-participant-call', { roomCode, targetUser: userNom });
+    });
+
+    micButton.addEventListener('click', () => {
+      socket.emit('toggle-participant-mic', { roomCode, targetUser: userNom });
+    });
+
+    videoButton.addEventListener('click', () => {
+      socket.emit('toggle-participant-video', { roomCode, targetUser: userNom });
+    });
   });
+});
+
+// Recevoir les événements pour gérer les actions sur les participants
+socket.on('participant-mic-toggled', ({ targetUser, micEnabled }) => {
+  console.log(`Microphone de ${targetUser} ${micEnabled ? 'activé' : 'désactivé'}.`);
+  // Logique pour mettre à jour l'interface utilisateur si nécessaire
+});
+
+socket.on('participant-video-toggled', ({ targetUser, videoEnabled }) => {
+  console.log(`Vidéo de ${targetUser} ${videoEnabled ? 'activée' : 'désactivée'}.`);
+  // Logique pour mettre à jour l'interface utilisateur si nécessaire
+});
+
+socket.on('participant-call-ended', (targetUser) => {
+  console.log(`Appel terminé pour ${targetUser}.`);
+  // Logique pour retirer le flux vidéo si nécessaire
 });
 
 
@@ -396,4 +447,3 @@ try {
 initChat(); // Appel de la fonction asynchrone
 
 
-// 7.1. Affichage de la liste des participants 

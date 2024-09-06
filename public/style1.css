@@ -48,6 +48,50 @@ header h1 {
   margin-top: 0;
 }
 
+/* Style des éléments de la liste des participants */
+.list-group-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+.list-group-item button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.list-group-item .fa {
+  font-size: 1rem;
+  color: #1a237e;
+  transition: color 0.3s;
+}
+
+.list-group-item button:hover .fa {
+  color: #42a5f5;
+}
+
+/* Style des boutons d'action dans la liste des participants */
+.list-group-item .call-button {
+  color: red;
+}
+
+.list-group-item .microphone-button {
+  color: green;
+}
+
+.list-group-item .video-button {
+  color: blue;
+}
+
+
 /* Contenu principal */
 .main-content {
   display: flex;
