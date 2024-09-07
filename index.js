@@ -1,5 +1,5 @@
 const express = require('express');
-const https = require('https');
+const https = require('https'); // Remplacer http par https
 const fs = require('fs');
 const socketIo = require('socket.io');
 const { ExpressPeerServer } = require('peer');
@@ -11,7 +11,7 @@ const certificate = fs.readFileSync('server.cert', 'utf8');
 const credentials = { key: privateKey, cert: certificate };
 
 const app = express();
-const server = https.createServer(credentials, app);
+const server = https.createServer(credentials, app); // Utiliser HTTPS ici
 const io = socketIo(server);
 
 // Importation des routes
@@ -41,50 +41,30 @@ const peerServer = ExpressPeerServer(server, {
 });
 app.use('/peerjs', peerServer);
 
-// Gestion des participants par salle
-const participants = {};
-
-// Fonctions Utilitaires
-const addParticipant = (roomCode, userNom, socket) => {
-  if (!participants[roomCode]) {
-    participants[roomCode] = [];
-  }
-  if (!participants[roomCode].includes(userNom)) {
-    participants[roomCode].push(userNom);
-    socket.join(roomCode);
-    io.to(roomCode).emit('user-connected', userNom);
-    io.to(roomCode).emit('participants-update', participants[roomCode]);
-    console.log(`Utilisateur (${userNom}) s'est connecté à la salle ${roomCode}.`);
-  } else {
-    console.warn(`Utilisateur (${userNom}) est déjà dans la salle ${roomCode}.`);
-  }
-};
-
-const removeParticipant = (roomCode, userNom) => {
-  if (participants[roomCode]) {
-    participants[roomCode] = participants[roomCode].filter(nom => nom !== userNom);
-    io.to(roomCode).emit('participants-update', participants[roomCode]);
-    io.to(roomCode).emit('user-disconnected', userNom);
-    if (participants[roomCode].length === 0) {
-      delete participants[roomCode];
-      console.log(`La salle ${roomCode} a été supprimée car elle est vide.`);
-    }
-  }
-};
-
 // Gestion des connexions Socket.IO
 io.on('connection', (socket) => {
   console.log('Un utilisateur s\'est connecté.');
 
-  socket.on('join-room', (roomCode, userNom) => {
-    if (!roomCode || !userNom) {
-      console.error('Room code ou nom d\'utilisateur manquant.');
-      return;
-    }
-    socket.roomCode = roomCode;
-    socket.userNom = userNom;
-    addParticipant(roomCode, userNom, socket);
-  });
+  socket.on('join-room', (roomCode, userId) => {
+    socket.join(roomCode);
+    console.log(`Utilisateur (${userId}) s'est connecté à la salle ${roomCode}.`);
+    
+    // Notifier tous les utilisateurs de la salle que quelqu'un est connecté
+    io.to(roomCode).emit('user-connected', userId);
+
+    // Envoyer les détails des utilisateurs déjà connectés à l'utilisateur qui vient de se connecter
+    const usersInRoom = Array.from(io.sockets.adapter.rooms.get(roomCode) || []).map(id => id);
+    usersInRoom.forEach(user => {
+      if (user !== userId) {
+        socket.emit('user-connected', user);
+      }
+    });
+
+    // Gestion de l'envoi et de la réception des messages de chat
+    socket.on('chat message', (data) => {
+      console.log(`Message reçu de ${data.nom}: ${data.message}`);
+      io.to(roomCode).emit('chat message', data);
+    });
 
   // Gestion du début et de l'arrêt du partage d'écran
   socket.on('share-screen-start', (roomCode) => {
@@ -105,33 +85,32 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Gestion des messages de chat
-  socket.on('chat message', (data) => {
-    const roomCode = socket.roomCode;
-    if (roomCode && data && data.nom && data.message) {
-      console.log(`Message reçu de ${data.nom}: ${data.message}`);
-      io.to(roomCode).emit('chat message', data);
-    } else {
-      console.error('Erreur lors de l\'envoi du message: données manquantes ou invalides.');
-    }
+    // Gestion des boutons d'action
+  socket.on('end-call', (userNom) => {
+    // Informer tous les autres participants de terminer l'appel pour ce participant
+    io.to(socket.roomCode).emit('end-call', userNom);
   });
 
-  
+  socket.on('toggle-mic', (userNom) => {
+    // Informer tous les autres participants pour couper/activer le micro de cet utilisateur
+    io.to(socket.roomCode).emit('toggle-mic', userNom);
+  });
 
+  socket.on('toggle-video', (userNom) => {
+    // Informer tous les autres participants pour couper/activer la vidéo de cet utilisateur
+    io.to(socket.roomCode).emit('toggle-video', userNom);
+  });
 
- 
-  // Déconnexion de l'utilisateur
-  socket.on('disconnect', () => {
-    const roomCode = socket.roomCode;
-    const userNom = socket.userNom;
-    if (roomCode && userNom) {
-      console.log(`Utilisateur (${userNom}) s'est déconnecté de la salle ${roomCode}.`);
-      removeParticipant(roomCode, userNom);
-    } else {
-      console.warn('Déconnexion d\'un utilisateur sans informations complètes de salle ou de nom.');
-    }
+    // Gestion de la déconnexion de l'utilisateur
+    socket.on('disconnect', () => {
+      console.log(`Utilisateur (${userId}) s'est déconnecté de la salle ${roomCode}.`);
+      socket.to(roomCode).emit('user-disconnected', userId);
+    });
   });
 });
+
+
+
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 3000;

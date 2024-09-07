@@ -16,6 +16,7 @@ header {
   padding: 10px 20px;
   display: flex;
   align-items: center;
+  text-align: center; /* Centre tout le contenu textuel */
 }
 
 header img {
@@ -26,6 +27,8 @@ header img {
 header h1 {
   font-size: 1.5rem;
   margin: 0;
+  text-align: center;
+  padding: 10px 350px;
 }
 
 /* Layout principal */

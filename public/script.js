@@ -2,19 +2,19 @@
 const checkAuth = () => {
   const token = getToken();
   if (!token) {
-    window.location.href = '/login.html';  // Redirige vers la page de login si non authentifié
+    window.location.href = '/login.html'; // Redirige vers la page de login si non authentifié
   } else {
     fetch('/api/users/me', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
-    .then(response => response.json())
-    .then(user => {
-      document.getElementById('welcomeMessage').textContent = `Bienvenue ${user.nom}`;
-    })
-    .catch(error => {
-      console.error('Erreur lors de la récupération des informations utilisateur:', error);
-      document.getElementById('welcomeMessage').textContent = 'Erreur lors de la récupération du nom';
-    });
+      .then(response => response.json())
+      .then(user => {
+        document.getElementById('welcomeMessage').textContent = `Bienvenue ${user.nom}`;
+      })
+      .catch(error => {
+        console.error('Erreur lors de la récupération des informations utilisateur:', error);
+        document.getElementById('welcomeMessage').textContent = 'Erreur lors de la récupération du nom';
+      });
   }
 };
 
@@ -33,17 +33,17 @@ if (createRoomForm) {
 
     fetch('/api/conferences/create', {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${getToken()}`
       },
       body: JSON.stringify({ roomName })
     })
-    .then(response => response.json())
-    .then(data => {
-      window.location.href = `/conference.html?roomCode=${data.roomCode}`;
-    })
-    .catch(error => console.error('Erreur:', error));
+      .then(response => response.json())
+      .then(data => {
+        window.location.href = `/conference.html?roomCode=${data.roomCode}`;
+      })
+      .catch(error => console.error('Erreur:', error));
   });
 }
 
@@ -57,39 +57,39 @@ if (joinRoomForm) {
     fetch(`/api/conferences/join/${roomCode}`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     })
-    .then(response => {
-      if (response.ok) {
-        return response.json();
-      } else {
-        throw new Error('Salle non trouvée.');
-      }
-    })
-    .then(data => {
-      window.location.href = `/conference.html?roomCode=${data.room.room_code}`;
-    })
-    .catch(error => {
-      console.error('Erreur:', error);
-      alert('Salle non trouvée. Veuillez vérifier le code.');
-    });
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error('Salle non trouvée.');
+        }
+      })
+      .then(data => {
+        window.location.href = `/conference.html?roomCode=${data.room.room_code}`;
+      })
+      .catch(error => {
+        console.error('Erreur:', error);
+        alert('Salle non trouvée. Veuillez vérifier le code.');
+      });
   });
 }
 
 // Sélectionner le bouton d'invitation
 const inviteButton = document.getElementById('inviteParticipant');
-inviteButton.addEventListener('click', () => {
-  const inviteLink = `${window.location.origin}/conference.html?roomCode=${roomCode}`;
-  
-  navigator.clipboard.writeText(inviteLink)
-    .then(() => {
-      alert('Lien d\'invitation copié dans le presse-papier : ' + inviteLink);
-    })
-    .catch((error) => {
-      console.error('Erreur lors de la copie du lien d\'invitation :', error);
-      alert('Impossible de copier le lien d\'invitation.');
-    });
-});
+if (inviteButton) {
+  inviteButton.addEventListener('click', () => {
+    const inviteLink = `${window.location.origin}/conference.html?roomCode=${roomCode}`;
 
-
+    navigator.clipboard.writeText(inviteLink)
+      .then(() => {
+        alert('Lien d\'invitation copié dans le presse-papier : ' + inviteLink);
+      })
+      .catch((error) => {
+        console.error('Erreur lors de la copie du lien d\'invitation :', error);
+        alert('Impossible de copier le lien d\'invitation.');
+      });
+  });
+}
 
 // Gestion de la conférence
 const urlParams = new URLSearchParams(window.location.search);
@@ -111,162 +111,170 @@ if (roomCode) {
   let myVideoStream;
   let screenStream;
   const screenVideo = document.createElement('video');
-  
+
   navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true
   }).then((stream) => {
     myVideoStream = stream;
     addVideoStream(myVideo, stream);
+
+      // Gestion du microphone
+  const muteButton = document.getElementById('muteButton');
+  let audioEnabled = true;
+
+  // Initialisation des icônes pour le microphone
+  const muteIcon = document.createElement('i');
+  muteIcon.className = 'fas fa-microphone'; // Icône de microphone activé
+  muteButton.appendChild(muteIcon);
+
+  muteButton.addEventListener('click', () => {
+    audioEnabled = !audioEnabled;
+    myVideoStream.getAudioTracks()[0].enabled = audioEnabled;
     
-  
-    // Gestion du microphone
-    const muteButton = document.getElementById('muteButton');
-    let audioEnabled = true;
+    // Changer l'icône selon l'état du microphone
+    muteIcon.className = audioEnabled ? 'fas fa-microphone' : 'fas fa-microphone-slash'; // Icône de microphone désactivé
+  });
 
-    muteButton.addEventListener('click', () => {
-      audioEnabled = !audioEnabled;
-      myVideoStream.getAudioTracks()[0].enabled = audioEnabled;
-      muteButton.textContent = audioEnabled ? 'Muet' : 'Microphone activé';
-    });
+  // Gestion de la caméra
+  const videoButton = document.getElementById('videoButton');
+  let videoEnabled = true;
 
-    // Gestion de la caméra
-    const videoButton = document.getElementById('videoButton');
-    let videoEnabled = true;
+  // Initialisation des icônes pour la caméra
+  const videoIcon = document.createElement('i');
+  videoIcon.className = 'fas fa-video'; // Icône de caméra activée
+  videoButton.appendChild(videoIcon);
 
-    videoButton.addEventListener('click', () => {
-      videoEnabled = !videoEnabled;
-      myVideoStream.getVideoTracks()[0].enabled = videoEnabled;
-      videoButton.textContent = videoEnabled ? 'Vidéo' : 'Caméra activée';
-    });
+  videoButton.addEventListener('click', () => {
+    videoEnabled = !videoEnabled;
+    myVideoStream.getVideoTracks()[0].enabled = videoEnabled;
+    
+    // Changer l'icône selon l'état de la caméra
+    videoIcon.className = videoEnabled ? 'fas fa-video' : 'fas fa-video-slash'; // Icône de caméra désactivée
+  });
 
-  
-// Implementation du partage d'écran
+   // Partage d'écran
 const shareScreenButton = document.getElementById('shareScreen');
+
 shareScreenButton.addEventListener('click', async () => {
   try {
+    // Demander l'accès au partage d'écran
     screenStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { cursor: "always" },
-      audio: false
+      video: {
+        cursor: "always"
+      },
+      audio: true
     });
 
-    // Informer les autres participants que le partage d'écran a commencé
-    socket.emit('share-screen-start', roomCode);
-
     // Créer un élément vidéo pour afficher le partage d'écran
+    const screenVideo = document.createElement('video');
     screenVideo.srcObject = screenStream;
-    screenVideo.classList.add('shared-screen');
-    screenVideo.style.width = '100%'; // Plein écran
 
     screenVideo.addEventListener('loadedmetadata', () => {
       screenVideo.play();
     });
 
-    // Ajouter la vidéo de partage d'écran et désactiver les autres vidéos
-    videoGrid.innerHTML = ''; 
+    screenVideo.classList.add('shared-screen');
+
+    // Effacer la grille des vidéos et ajouter la vidéo de partage d'écran
+    videoGrid.innerHTML = '';
     videoGrid.append(screenVideo);
 
     // Remplacer la piste vidéo pour chaque utilisateur connecté
     for (let userNom in peers) {
       const call = peers[userNom];
-      if (call) {
-        call.peerConnection.getSenders()
-          .find(sender => sender.track.kind === 'video')
-          .replaceTrack(screenStream.getVideoTracks()[0]);
+      if (call && call.peerConnection) { // Vérifie si call et peerConnection existent
+        const sender = call.peerConnection.getSenders()
+          .find(sender => sender.track.kind === 'video');
+        if (sender) { // Vérifie si un sender vidéo est trouvé
+          sender.replaceTrack(screenStream.getVideoTracks()[0]);
+        }
       }
     }
 
+    // Émettre un événement Socket.io pour indiquer le début du partage d'écran
+    socket.emit('share-screen-start', roomCode);
+
     // Gérer la fin du partage d'écran
     screenStream.getVideoTracks()[0].onended = () => {
-      // Restaurer la piste vidéo originale
       const originalVideoTrack = myVideoStream.getVideoTracks()[0];
       for (let userNom in peers) {
         const call = peers[userNom];
-        if (call) {
-          call.peerConnection.getSenders()
-            .find(sender => sender.track.kind === 'video')
-            .replaceTrack(originalVideoTrack);
+        if (call && call.peerConnection) { // Vérifie si call et peerConnection existent
+          const sender = call.peerConnection.getSenders()
+            .find(sender => sender.track.kind === 'video');
+          if (sender) { // Vérifie si un sender vidéo est trouvé
+            sender.replaceTrack(originalVideoTrack);
+          }
         }
       }
 
-      // Réactiver les vidéos et retirer le partage d'écran
+      // Effacer la grille des vidéos et réafficher la vidéo de la caméra
       videoGrid.innerHTML = '';
       addVideoStream(myVideo, myVideoStream);
 
-      // Informer les autres participants que le partage d'écran s'est arrêté
+      // Émettre un événement Socket.io pour indiquer la fin du partage d'écran
       socket.emit('share-screen-stop', roomCode);
     };
 
   } catch (error) {
-    console.error('Erreur lors du partage d\'écran:', error);
+    if (error.name === 'NotAllowedError') {
+      alert("Le partage d'écran a été refusé. Veuillez accorder la permission pour continuer.");
+    } else {
+      console.error('Erreur lors du partage d\'écran:', error);
+    }
   }
 });
 
 // Gestion des événements Socket.io
 socket.on('share-screen-start', () => {
-  // Masquer les vidéos et afficher le partage d'écran en plein écran
   const videoElements = document.querySelectorAll('.participant-video');
   videoElements.forEach(video => {
     video.style.display = 'block';
   });
 });
 
-  socket.on('share-screen-stop', () => {
-    // Réafficher les vidéos et masquer le partage d'écran
-    const videoElements = document.querySelectorAll('.participant-video');
-    videoElements.forEach(video => {
-      video.style.display = 'block';
-    });
-    // Retirer la vidéo de partage d'écran si encore présente
-    const screenVideo = document.querySelector('.shared-screen');
-    if (screenVideo) {
-      screenVideo.remove();
-    }
+socket.on('share-screen-stop', () => {
+  const videoElements = document.querySelectorAll('.participant-video');
+  videoElements.forEach(video => {
+    video.style.display = 'block';
   });
+
+  const screenVideo = document.querySelector('.shared-screen');
+  if (screenVideo) {
+    screenVideo.remove();
+  }
+});
+
 
   }).catch((error) => {
     console.error('Erreur lors de l\'accès à la caméra/microphone:', error);
     alert('Impossible d\'accéder à la caméra et au microphone.');
   });
 
-  
-
   // Terminer l'appel
-
-    // Sélectionne le bouton "Terminer l'appel"
   const endCallButton = document.getElementById('endCallButton');
+  endCallButton.addEventListener('click', endCall);
 
-  // Fonction pour terminer l'appel
   function endCall() {
-    // Arrêter tous les flux vidéo
     const videoElements = document.querySelectorAll('video');
     videoElements.forEach(video => {
       if (video.srcObject) {
-        // Arrêter chaque flux média
         video.srcObject.getTracks().forEach(track => track.stop());
         video.srcObject = null;
       }
     });
 
-    // Fermer la connexion PeerJS si elle existe
     if (peer) {
-      peer.destroy(); // Fermer la connexion Peer
+      peer.destroy();
     }
 
-    // Déconnecter le socket.io
     if (socket) {
       socket.disconnect();
     }
 
-    // Rediriger vers la page d'accueil ou afficher un message
-    window.location.href = 'index.html'; //retourner à la page d'accueil
+    window.location.href = 'index.html';
   }
-
-  
-
-  // Associer l'événement de clic au bouton
-  endCallButton.addEventListener('click', endCall);
- 
 
   peer.on('open', (id) => {
     socket.emit('join-room', roomCode, id);
@@ -277,75 +285,85 @@ socket.on('share-screen-start', () => {
   });
 
   // Écouteur pour les boutons d'action sur chaque participant
-socket.on('participants-update', (participants) => {
-  console.log('Participants reçus:', participants);
-  const participantList = document.querySelector('.list-group');
-  participantList.innerHTML = '';
+  socket.on('participants-update', (participants) => {
+    console.log('Participants reçus:', participants);
+    const participantList = document.querySelector('.list-group');
+    participantList.innerHTML = '';
 
-  participants.forEach(userNom => {
-    // Filtrer les UUIDs s'ils apparaissent encore
-    if (!userNom || /^[0-9a-fA-F-]{36}$/.test(userNom)) {
-      console.warn('Nom d\'utilisateur ignoré:', userNom);
-      return;
-    }
+    participants.forEach(userNom => {
+      if (!userNom || /^[0-9a-fA-F-]{36}$/.test(userNom)) {
+        console.warn('Nom d\'utilisateur ignoré:', userNom);
+        return;
+      }
 
-    const listItem = document.createElement('li');
-    listItem.className = 'list-group-item';
-    
-    // Nom du participant
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = userNom;
-    listItem.appendChild(nameSpan);
+      const listItem = document.createElement('li');
+      listItem.className = 'list-group-item';
 
-    // Boutons d'action
-    const callButton = document.createElement('button');
-    callButton.innerHTML = '<i class="fas fa-phone-slash"></i>';
-    callButton.className = 'call-button';
-    listItem.appendChild(callButton);
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = userNom;
+      listItem.appendChild(nameSpan);
 
-    const micButton = document.createElement('button');
-    micButton.innerHTML = '<i class="fas fa-microphone-slash"></i>';
-    micButton.className = 'microphone-button';
-    listItem.appendChild(micButton);
+      const callButton = document.createElement('button');
+      callButton.innerHTML = '<i class="fas fa-phone-slash"></i>';
+      callButton.className = 'call-button';
+      listItem.appendChild(callButton);
 
-    const videoButton = document.createElement('button');
-    videoButton.innerHTML = '<i class="fas fa-video"></i>';
-    videoButton.className = 'video-button';
-    listItem.appendChild(videoButton);
+      const micButton = document.createElement('button');
+      micButton.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+      micButton.className = 'mic-button';
+      listItem.appendChild(micButton);
 
-    participantList.appendChild(listItem);
+      const videoButton = document.createElement('button');
+      videoButton.innerHTML = '<i class="fas fa-video-slash"></i>';
+      videoButton.className = 'video-button';
+      listItem.appendChild(videoButton);
 
-    // Ajouter des écouteurs pour les boutons
-    callButton.addEventListener('click', () => {
-      socket.emit('end-participant-call', { roomCode, targetUser: userNom });
+      callButton.addEventListener('click', () => {
+        socket.emit('disconnect-call', userNom);
+      });
+
+      micButton.addEventListener('click', () => {
+        socket.emit('mute-microphone', userNom);
+      });
+
+      videoButton.addEventListener('click', () => {
+        socket.emit('disable-video', userNom);
+      });
+
+      participantList.appendChild(listItem);
+   
+   
     });
-
-    micButton.addEventListener('click', () => {
-      socket.emit('toggle-participant-mic', { roomCode, targetUser: userNom });
-    });
-
-    videoButton.addEventListener('click', () => {
-      socket.emit('toggle-participant-video', { roomCode, targetUser: userNom });
-    });
+  
   });
-});
 
-// Recevoir les événements pour gérer les actions sur les participants
-socket.on('participant-mic-toggled', ({ targetUser, micEnabled }) => {
-  console.log(`Microphone de ${targetUser} ${micEnabled ? 'activé' : 'désactivé'}.`);
-  // Logique pour mettre à jour l'interface utilisateur si nécessaire
-});
+  socket.on('disconnect-call', (userNom) => {
+    const video = document.querySelector(`video[data-user-nom="${userNom}"]`);
+    if (video) {
+      video.srcObject.getTracks().forEach(track => track.stop());
+      video.remove();
+    }
+  });
 
-socket.on('participant-video-toggled', ({ targetUser, videoEnabled }) => {
-  console.log(`Vidéo de ${targetUser} ${videoEnabled ? 'activée' : 'désactivée'}.`);
-  // Logique pour mettre à jour l'interface utilisateur si nécessaire
-});
+  socket.on('mute-microphone', (userNom) => {
+    const video = document.querySelector(`video[data-user-nom="${userNom}"]`);
+    if (video && video.srcObject) {
+      const audioTrack = video.srcObject.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = false;
+      }
+    }
+  });
 
-socket.on('participant-call-ended', (targetUser) => {
-  console.log(`Appel terminé pour ${targetUser}.`);
-  // Logique pour retirer le flux vidéo si nécessaire
-});
-
+  socket.on('disable-video', (userNom) => {
+    const video = document.querySelector(`video[data-user-nom="${userNom}"]`);
+    if (video && video.srcObject) {
+      const videoTrack = video.srcObject.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = false;
+      }
+    }
+  });
 
   socket.on('user-disconnected', (userId) => {
     if (peers[userId]) peers[userId].close();
@@ -354,21 +372,26 @@ socket.on('participant-call-ended', (targetUser) => {
   peer.on('call', (call) => {
     call.answer(myVideoStream);
     const video = document.createElement('video');
+
     call.on('stream', (userVideoStream) => {
       addVideoStream(video, userVideoStream);
     });
+
     call.on('close', () => {
       video.remove();
     });
+
     peers[call.peer] = call;
   });
 
   function connectToNewUser(userId, stream) {
     const call = peer.call(userId, stream);
     const video = document.createElement('video');
+
     call.on('stream', (userVideoStream) => {
       addVideoStream(video, userVideoStream);
     });
+
     call.on('close', () => {
       video.remove();
     });
@@ -378,72 +401,76 @@ socket.on('participant-call-ended', (targetUser) => {
 
   function addVideoStream(video, stream) {
     video.srcObject = stream;
+    video.classList.add('participant-video');
+
     video.addEventListener('loadedmetadata', () => {
       video.play();
     });
-    video.classList.add('participant-video');
+
     videoGrid.append(video);
   }
-}
 
+    // recuperation du nom de l'utilisateur 
 
-// recuperation du nom de l'utilisateur 
+  const fetchUserNom = async () => {
+    try {
+      const response = await fetch('/api/users/me', {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
 
-const fetchUserNom = async () => {
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération du nom utilisateur');
+      }
+
+      const data = await response.json();
+      return data.nom; // Retourne le nom de l'utilisateur depuis la réponse API
+    } catch (error) {
+      console.error('Erreur lors de la récupération du nom utilisateur:', error);
+      return null;
+    }
+  };
+
+  const initChat = async () => {
   try {
-    const response = await fetch('/api/users/me', {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
+    const userNom = await fetchUserNom(); // Fonction modifiée pour obtenir le champ `nom`
+    const socket = io();
+
+    if (userNom) {
+      socket.emit('join-room', roomCode, userNom);
+    } else {
+      console.error('Impossible de récupérer le nom utilisateur.');
+    }
+
+    // Ajoute un seul listener pour l'envoi du formulaire de chat
+    document.getElementById('chat-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const input = document.getElementById('chat-input');
+      if (input.value.trim() !== '') {
+        socket.emit('chat message', { nom: userNom, message: input.value });
+        input.value = '';
+      }
     });
 
-    if (!response.ok) {
-      throw new Error('Erreur lors de la récupération du nom utilisateur');
-    }
+    // S'assurez qu'il n'y a qu'un seul listener pour 'chat message'
+    socket.off('chat message'); // Supprime tous les listeners précédents avant d'en ajouter un nouveau
+    socket.on('chat message', function(data) {
+      const chatBox = document.getElementById('chat-box');
+      const messageElement = document.createElement('div');
+      messageElement.textContent = `${data.nom}: ${data.message}`;
+      chatBox.appendChild(messageElement);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
 
-    const data = await response.json();
-    return data.nom; // Retourne le nom de l'utilisateur depuis la réponse API
   } catch (error) {
-    console.error('Erreur lors de la récupération du nom utilisateur:', error);
-    return null;
+    console.error('Erreur lors de l\'initialisation du chat:', error);
   }
-};
+  };
 
-const initChat = async () => {
-try {
-  const userNom = await fetchUserNom(); // Fonction modifiée pour obtenir le champ `nom`
-  const socket = io();
+  initChat(); // Appel de la fonction asynchrone
 
-  if (userNom) {
-    socket.emit('join-room', roomCode, userNom);
-  } else {
-    console.error('Impossible de récupérer le nom utilisateur.');
-  }
-
-  // Ajoute un seul listener pour l'envoi du formulaire de chat
-  document.getElementById('chat-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const input = document.getElementById('chat-input');
-    if (input.value.trim() !== '') {
-      socket.emit('chat message', { nom: userNom, message: input.value });
-      input.value = '';
-    }
-  });
-
-  // S'assurez qu'il n'y a qu'un seul listener pour 'chat message'
-  socket.off('chat message'); // Supprime tous les listeners précédents avant d'en ajouter un nouveau
-  socket.on('chat message', function(data) {
-    const chatBox = document.getElementById('chat-box');
-    const messageElement = document.createElement('div');
-    messageElement.textContent = `${data.nom}: ${data.message}`;
-    chatBox.appendChild(messageElement);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
-
-} catch (error) {
-  console.error('Erreur lors de l\'initialisation du chat:', error);
 }
-};
 
-initChat(); // Appel de la fonction asynchrone
+
 
 
